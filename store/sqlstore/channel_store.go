@@ -2665,14 +2665,14 @@ func (s SqlChannelStore) channelSearchQuery(term string, opts store.ChannelSearc
 		query = query.Offset(uint64(*opts.Page * *opts.PerPage))
 	}
 
-	likeClause, likeTerm := s.buildLIKEClause(term, "c.Name, c.DisplayName, c.Purpose")
+	likeClause, likeTerm := s.buildLIKEClause(term, "c.DisplayName")
 	if likeTerm != "" {
 		likeClause = strings.ReplaceAll(likeClause, ":LikeTerm", "?")
-		fulltextClause, fulltextTerm := s.buildFulltextClause(term, "c.Name, c.DisplayName, c.Purpose")
+		fulltextClause, fulltextTerm := s.buildFulltextClause(term, "c.DisplayName")
 		fulltextClause = strings.ReplaceAll(fulltextClause, ":FulltextTerm", "?")
 		query = query.Where(sq.Or{
-			sq.Expr(likeClause, likeTerm, likeTerm, likeTerm), // Keep the number of likeTerms same as the number
-			// of columns (c.Name, c.DisplayName, c.Purpose)
+			sq.Expr(likeClause, likeTerm), // Keep the number of likeTerms same as the number
+			// of columns (c.DisplayName)
 			sq.Expr(fulltextClause, fulltextTerm),
 		})
 	}
