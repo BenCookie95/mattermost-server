@@ -423,6 +423,7 @@ func (s SqlChannelStore) createIndexesIfNotExists() {
 	s.CreateIndexIfNotExists("idx_channelmembers_user_id", "ChannelMembers", "UserId")
 
 	s.CreateFullTextIndexIfNotExists("idx_channel_search_txt", "Channels", "Name, DisplayName, Purpose")
+	s.CreateFullTextIndexIfNotExists("idx_channel_search_display_name_txt", "Channels", "DisplayName")
 
 	s.CreateIndexIfNotExists("idx_publicchannels_team_id", "PublicChannels", "TeamId")
 	s.CreateIndexIfNotExists("idx_publicchannels_name", "PublicChannels", "Name")
