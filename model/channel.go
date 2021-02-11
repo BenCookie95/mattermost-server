@@ -133,6 +133,7 @@ type ChannelSearchOpts struct {
 	Private                 bool
 	Page                    *int
 	PerPage                 *int
+	SearchColumns           []string
 }
 
 type ChannelMemberCountByGroup struct {

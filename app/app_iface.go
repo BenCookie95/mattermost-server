@@ -866,6 +866,7 @@ type AppIface interface {
 	RolesGrantPermission(roleNames []string, permissionId string) bool
 	Saml() einterfaces.SamlInterface
 	SanitizeProfile(user *model.User, asAdmin bool)
+	SanitizeSearchColumns(columns []string) []string
 	SanitizeTeam(session model.Session, team *model.Team) *model.Team
 	SanitizeTeams(session model.Session, teams []*model.Team) []*model.Team
 	SaveAndBroadcastStatus(status *model.Status)

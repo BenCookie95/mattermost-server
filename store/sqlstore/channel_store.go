@@ -2665,17 +2665,42 @@ func (s SqlChannelStore) channelSearchQuery(term string, opts store.ChannelSearc
 		query = query.Offset(uint64(*opts.Page * *opts.PerPage))
 	}
 
-	likeClause, likeTerm := s.buildLIKEClause(term, "c.Name, c.DisplayName, c.Purpose")
-	if likeTerm != "" {
-		likeClause = strings.ReplaceAll(likeClause, ":LikeTerm", "?")
-		fulltextClause, fulltextTerm := s.buildFulltextClause(term, "c.Name, c.DisplayName, c.Purpose")
-		fulltextClause = strings.ReplaceAll(fulltextClause, ":FulltextTerm", "?")
-		query = query.Where(sq.Or{
-			sq.Expr(likeClause, likeTerm, likeTerm, likeTerm), // Keep the number of likeTerms same as the number
-			// of columns (c.Name, c.DisplayName, c.Purpose)
-			sq.Expr(fulltextClause, fulltextTerm),
-		})
+	if len(opts.SearchColumns) > 0 {
+		for i := 0; i < len(opts.SearchColumns); i++ {
+			opts.SearchColumns[i] = "c." + opts.SearchColumns[i]
+		}
+		searchColumns := strings.Join(opts.SearchColumns, ", ")
+		likeClause, likeTerm := s.buildLIKEClause(term, searchColumns)
+		
+		if likeTerm != "" {
+			likeClause = strings.ReplaceAll(likeClause, ":LikeTerm", "?")
+			likestuff := []interface{}{}
+			for i := 0; i < len(opts.SearchColumns); i++ {
+				likestuff = append(likestuff, likeTerm)
+			}
+			fulltextClause, fulltextTerm := s.buildFulltextClause(term, searchColumns)
+			fulltextClause = strings.ReplaceAll(fulltextClause, ":FulltextTerm", "?")
+			query = query.Where(sq.Or{
+				sq.Expr(likeClause, likestuff...), // Keep the number of likeTerms same as the number
+				// of columns (c.Name, c.DisplayName, c.Purpose)
+				sq.Expr(fulltextClause, fulltextTerm),
+			})
+		}
+	} else {
+		likeClause, likeTerm := s.buildLIKEClause(term, "c.Name, c.DisplayName, c.Purpose")
+		if likeTerm != "" {
+			likeClause = strings.ReplaceAll(likeClause, ":LikeTerm", "?")
+			fulltextClause, fulltextTerm := s.buildFulltextClause(term, "c.Name, c.DisplayName, c.Purpose")
+			fulltextClause = strings.ReplaceAll(fulltextClause, ":FulltextTerm", "?")
+			likestuff := []interface{}{likeTerm, likeTerm, likeTerm}
+			query = query.Where(sq.Or{
+				sq.Expr(likeClause, likestuff...), // Keep the number of likeTerms same as the number
+				// of columns (c.Name, c.DisplayName, c.Purpose)
+				sq.Expr(fulltextClause, fulltextTerm),
+			})
+		}
 	}
+	
 
 	if len(opts.ExcludeChannelNames) > 0 {
 		query = query.Where(sq.NotEq{"c.Name": opts.ExcludeChannelNames})
@@ -2719,7 +2744,7 @@ func (s SqlChannelStore) SearchAllChannels(term string, opts store.ChannelSearch
 	}
 	var channels model.ChannelListWithTeamData
 	if _, err = s.GetReplica().Select(&channels, queryString, args...); err != nil {
-		return nil, 0, errors.Wrapf(err, "failed to find Channels with term='%s'", term)
+		return nil, 0, errors.Wrapf(err, "failed to find Channels with term='%s' querystring='%s' args='%s'", term, queryString, strings.Join(opts.SearchColumns, ","))
 	}
 
 	var totalCount int64
@@ -2731,7 +2756,7 @@ func (s SqlChannelStore) SearchAllChannels(term string, opts store.ChannelSearch
 			return nil, 0, errors.Wrap(err, "channel_tosql")
 		}
 		if totalCount, err = s.GetReplica().SelectInt(queryString, args...); err != nil {
-			return nil, 0, errors.Wrapf(err, "failed to find Channels with term='%s'", term)
+			return nil, 0, errors.Wrapf(err, "failed to find Channels with term='%s' querystring='%s' args='%s'", term, queryString, strings.Join(opts.SearchColumns, ","))
 		}
 	} else {
 		totalCount = int64(len(channels))
@@ -2782,16 +2807,20 @@ func (s SqlChannelStore) buildLIKEClause(term string, searchColumns string) (lik
 	// Prepare the LIKE portion of the query.
 	var searchFields []string
 	for _, field := range strings.Split(searchColumns, ", ") {
-		if s.DriverName() == model.DATABASE_DRIVER_POSTGRES {
-			searchFields = append(searchFields, fmt.Sprintf("lower(%s) LIKE lower(%s) escape '*'", field, ":LikeTerm"))
-		} else {
-			searchFields = append(searchFields, fmt.Sprintf("%s LIKE %s escape '*'", field, ":LikeTerm"))
-		}
+		searchFields = append(searchFields, s.getLIKEStatement(field))
 	}
 
 	likeClause = fmt.Sprintf("(%s)", strings.Join(searchFields, " OR "))
 	likeTerm = wildcardSearchTerm(likeTerm)
 	return
+}
+
+func (s SqlChannelStore) getLIKEStatement(field string) string {
+	if s.DriverName() == model.DATABASE_DRIVER_POSTGRES {
+		return fmt.Sprintf("lower(%s) LIKE lower(%s) escape '*'", field, ":LikeTerm")
+	} else {
+		return fmt.Sprintf("%s LIKE %s escape '*'", field, ":LikeTerm")
+	}
 }
 
 func (s SqlChannelStore) buildFulltextClause(term string, searchColumns string) (fulltextClause, fulltextTerm string) {

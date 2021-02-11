@@ -12416,6 +12416,23 @@ func (a *OpenTracingAppLayer) SanitizeProfile(user *model.User, asAdmin bool) {
 	a.app.SanitizeProfile(user, asAdmin)
 }
 
+func (a *OpenTracingAppLayer) SanitizeSearchColumns(columns []string) []string {
+	origCtx := a.ctx
+	span, newCtx := tracing.StartSpanWithParentByContext(a.ctx, "app.SanitizeSearchColumns")
+
+	a.ctx = newCtx
+	a.app.Srv().Store.SetContext(newCtx)
+	defer func() {
+		a.app.Srv().Store.SetContext(origCtx)
+		a.ctx = origCtx
+	}()
+
+	defer span.Finish()
+	resultVar0 := a.app.SanitizeSearchColumns(columns)
+
+	return resultVar0
+}
+
 func (a *OpenTracingAppLayer) SanitizeTeam(session model.Session, team *model.Team) *model.Team {
 	origCtx := a.ctx
 	span, newCtx := tracing.StartSpanWithParentByContext(a.ctx, "app.SanitizeTeam")

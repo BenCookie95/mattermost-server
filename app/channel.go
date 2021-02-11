@@ -2411,6 +2411,7 @@ func (a *App) SearchAllChannels(term string, opts model.ChannelSearchOpts) (*mod
 		Private:                 opts.Private,
 		Page:                    opts.Page,
 		PerPage:                 opts.PerPage,
+		SearchColumns:           opts.SearchColumns,
 	}
 
 	term = strings.TrimSpace(term)
@@ -2421,6 +2422,9 @@ func (a *App) SearchAllChannels(term string, opts model.ChannelSearchOpts) (*mod
 	}
 
 	return channelList, totalCount, nil
+}
+func (a *App) SanitizeSearchColumns(columns []string) []string {
+	return model.SanitizeSearchColumns(columns)
 }
 
 func (a *App) SearchChannels(teamId string, term string) (*model.ChannelList, *model.AppError) {

@@ -802,6 +802,7 @@ type ChannelSearchOpts struct {
 	Private                 bool
 	Page                    *int
 	PerPage                 *int
+	SearchColumns           []string
 }
 
 func (c *ChannelSearchOpts) IsPaginated() bool {

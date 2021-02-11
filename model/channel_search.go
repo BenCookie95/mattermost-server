@@ -23,6 +23,7 @@ type ChannelSearch struct {
 	Deleted                 bool     `json:"deleted"`
 	Page                    *int     `json:"page,omitempty"`
 	PerPage                 *int     `json:"per_page,omitempty"`
+	SearchColumns           []string `json:"search_columns"`
 }
 
 // ToJson convert a Channel to a json string
@@ -36,4 +37,23 @@ func ChannelSearchFromJson(data io.Reader) *ChannelSearch {
 	var cs *ChannelSearch
 	json.NewDecoder(data).Decode(&cs)
 	return cs
+}
+
+
+// SanitizeSearchColumns sanitizes the SearchColumns array and matches any entries to our columns
+func SanitizeSearchColumns(columns []string) []string {
+	var searchColumns []string
+
+	for _, column := range columns {
+		if column == "DisplayName" {
+			searchColumns = append(searchColumns, "DisplayName")
+		}
+		if column == "Name" {
+			searchColumns = append(searchColumns, "Name")
+		}
+		if column == "Purpose" {
+			searchColumns = append(searchColumns, "Purpose")
+		}
+	}
+	return searchColumns
 }
