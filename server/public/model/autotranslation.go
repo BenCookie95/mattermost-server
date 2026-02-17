@@ -181,7 +181,6 @@ func NewErrAutoTranslationNotAvailable(reason string) *ErrAutoTranslationNotAvai
 	return &ErrAutoTranslationNotAvailable{reason: reason}
 }
 
-
 // AutoTranslationPath represents the code path that initiated a translation.
 // This enables observability (metrics) and path-specific behavior (timeouts).
 type AutoTranslationPath string
