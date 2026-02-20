@@ -466,7 +466,7 @@ func (s LocalCacheChannelStore) GetChannelsMemberCount(channelIDs []string) (_ m
 	remainingChannels := make([]string, 0)
 
 	toPass := allocateCacheTargets[int64](len(channelIDs))
-	errs := s.rootStore.doMultiReadCache(s.rootStore.reaction.rootStore.channelMemberCountsCache, channelIDs, toPass)
+	errs := s.rootStore.doMultiReadCache(s.rootStore.channelMemberCountsCache, channelIDs, toPass)
 	for i, err := range errs {
 		if err != nil {
 			if err != cache.ErrKeyNotFound {
